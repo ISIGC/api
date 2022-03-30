@@ -30,13 +30,13 @@ app.use(
 )
 
 import gamesRouter from "./routes/game/index.js"
-app.use("/api/game", gamesRouter)
+app.use("/game", gamesRouter)
 
 import rentRouter from "./routes/rent/index.js"
-app.use("/api/rent", rentRouter)
+app.use("/rent", rentRouter)
 
 import userRouter from "./routes/user/index.js"
-app.use("/api/user", userRouter)
+app.use("/user", userRouter)
 
 app.listen(process.env.PORT, () => {
 	console.log(`IGC Website API listening on port ${process.env.PORT}`)
