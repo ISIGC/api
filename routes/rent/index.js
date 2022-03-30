@@ -28,7 +28,6 @@ router.get("/:gameId/return", async (req, res) => {
 	try {
 		const doc = await Rent.findOne({ game: req.params.gameId, returned: false }).exec()
 		if (doc) {
-			console.log(doc)
 			doc.returned = true
 			await doc.save()
 			return res.json(doc)
