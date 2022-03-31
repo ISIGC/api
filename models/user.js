@@ -11,6 +11,7 @@ const userSchema = new Schema(
 			lowerCase: true,
 			unique: true
 		},
+		password: { type: String, required: true },
 		name: {
 			type: String,
 			required: true,
@@ -47,6 +48,19 @@ userSchema.methods.inGroup = async function (name) {
 		} else {
 			return undefined
 		}
+	} catch (err) {
+		return err
+	}
+}
+
+userSchema.methods.groups = async function () {
+	try {
+		const groups = await Group.find({ users: this.id }, "+name").exec()
+		let leanGroups = []
+		for (let i = 0; i < groups.length; i++) {
+			leanGroups[i] = groups[i].name
+		}
+		return leanGroups
 	} catch (err) {
 		return err
 	}

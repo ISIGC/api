@@ -2,18 +2,17 @@ import express from "express"
 const router = express.Router()
 
 import Rent from "../../models/rent.js"
-import User from "../../models/user.js"
+import isAuthenticated from "../../middleware/auth.js"
 
-router.post("/:gameId", async (req, res) => {
+router.post("/:gameId", isAuthenticated, async (req, res) => {
 	try {
-		const user = await User.findOne({ roll: req.body.roll }).exec()
-		if (user) {
+		if (req.userId) {
 			const doc = await Rent.exists({ game: req.params.gameId, returned: false }).exec()
 			if (doc) {
 				return res.status(404).json({ error: "Game not available" })
 			}
 			const rent = await Rent.create({
-				user: user.id,
+				user: req.userId,
 				game: req.params.gameId
 			})
 			return res.json(rent)
