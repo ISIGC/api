@@ -23,11 +23,17 @@ const userSchema = new Schema(
 			lowerCase: true,
 			trim: true
 		},
+		room: {
+			type: String,
+			required: true,
+			trim: true
+		},
 		phone: {
 			type: String,
 			required: true,
 			trim: true
-		}
+		},
+		active: { type: Boolean, required: true, default: false }
 	},
 	{
 		timestamps: true,

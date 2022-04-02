@@ -2,8 +2,11 @@ import express from "express"
 const router = express.Router()
 
 import Game from "../../models/game.js"
+import isAuthenticated from "../../middleware/auth.js"
+import attachUser from "../../middleware/attachUser.js"
+import isStaff from "../../middleware/staff.js"
 
-router.get("/", async (req, res) => {
+router.get("/", isAuthenticated, async (req, res) => {
 	try {
 		const games = await Game.find().exec()
 		let temp = []
@@ -17,7 +20,7 @@ router.get("/", async (req, res) => {
 	}
 })
 
-router.post("/", async (req, res) => {
+router.post("/", isAuthenticated, attachUser(), isStaff, async (req, res) => {
 	try {
 		const game = await Game.create({
 			name: req.body.name

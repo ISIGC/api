@@ -1,8 +1,10 @@
 import express from "express"
-const router = express.Router()
-
 import Rent from "../../models/rent.js"
 import isAuthenticated from "../../middleware/auth.js"
+import attachUser from "../../middleware/attachUser.js"
+import isStaff from "../../middleware/staff.js"
+
+const router = express.Router()
 
 router.post("/:gameId", isAuthenticated, async (req, res) => {
 	try {
@@ -23,7 +25,7 @@ router.post("/:gameId", isAuthenticated, async (req, res) => {
 	}
 })
 
-router.get("/:gameId/return", async (req, res) => {
+router.get("/:gameId/return", isAuthenticated, attachUser(), isStaff, async (req, res) => {
 	try {
 		const doc = await Rent.findOne({ game: req.params.gameId, returned: false }).exec()
 		if (doc) {

@@ -3,10 +3,12 @@ import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 import User from "../../models/user.js"
 import isAuthenticated from "../../middleware/auth.js"
+import attachUser from "../../middleware/attachUser.js"
+import isStaff from "../../middleware/staff.js"
 
 const router = express.Router()
 
-router.get("/", async (req, res) => {
+router.get("/", isAuthenticated, attachUser(), isStaff, async (req, res) => {
 	try {
 		const users = await User.find().exec()
 		res.send(users)
@@ -22,12 +24,15 @@ router.post("/", async (req, res) => {
 			roll: req.body.roll,
 			password: password,
 			name: req.body.name,
+			room: req.body.room,
 			gender: req.body.gender,
 			phone: req.body.phone
 		})
 		res.status(201).end()
 	} catch (err) {
-		console.log(err)
+		if (err.code === 11000) {
+			return res.status(400).json({ error: "duplicate user" })
+		}
 		res.status(500).send(err)
 	}
 })
@@ -37,36 +42,31 @@ router.post("/login", async (req, res) => {
 		const user = await User.findOne({ roll: req.body.roll }).exec()
 		if (user) {
 			if (await bcrypt.compare(req.body.password, user.password)) {
-				const token = await jwt.sign(
-					{
-						id: user.id
-					},
-					process.env.TOKEN_SECRET,
-					{
-						expiresIn: "90d"
-					}
-				)
-				res.cookie("session", token, {
-					httpOnly: true,
-					maxAge: 90 * 24 * 60 * 60 * 1000,
-					sameSite: "none",
-					secure: true
-				})
-				return res.status(200).end()
-			} else {
-				return res.status(401).send({
-					errors: {
-						password: "Does Not Match"
-					}
-				})
-			}
-		} else {
-			return res.status(401).send({
-				errors: {
-					email: "Does Not Exist"
+				if (user.active) {
+					const token = await jwt.sign(
+						{
+							id: user.id
+						},
+						process.env.TOKEN_SECRET,
+						{
+							expiresIn: "90d"
+						}
+					)
+					res.cookie("session", token, {
+						httpOnly: true,
+						maxAge: 90 * 24 * 60 * 60 * 1000,
+						sameSite: "none",
+						secure: true
+					})
+					return res.status(200).end()
 				}
-			})
+				return res.status(401).json({ error: "user inactive" })
+			}
+			return res.status(401).json({ error: "incorrect passoword" })
 		}
+		return res.status(400).send({
+			error: "user does not exist"
+		})
 	} catch (err) {
 		res.status(500).send(err)
 	}
