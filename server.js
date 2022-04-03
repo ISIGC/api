@@ -40,6 +40,9 @@ app.use("/rent", rentRouter)
 import userRouter from "./routes/user/index.js"
 app.use("/user", userRouter)
 
+import groupRouter from "./routes/group/index.js"
+app.use("/group", groupRouter)
+
 app.listen(process.env.PORT, () => {
 	console.log(`IGC Website API listening on port ${process.env.PORT}`)
 })

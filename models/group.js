@@ -12,4 +12,8 @@ const groupSchema = new Schema(
 	}
 )
 
+groupSchema.virtual("popUsers").get(function () {
+	return this.populate("users", "name room phone -_id").then((res) => res.users)
+})
+
 export default model("Group", groupSchema)

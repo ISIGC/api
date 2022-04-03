@@ -2,40 +2,12 @@ import express from "express"
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 import User from "../../models/user.js"
+import Group from "../../models/group.js"
 import isAuthenticated from "../../middleware/auth.js"
 import attachUser from "../../middleware/attachUser.js"
-import isStaff from "../../middleware/staff.js"
+import isAdmin from "../../middleware/admin.js"
 
 const router = express.Router()
-
-router.get("/", isAuthenticated, attachUser(), isStaff, async (req, res) => {
-	try {
-		const users = await User.find().exec()
-		res.send(users)
-	} catch (err) {
-		res.status(500).send(err)
-	}
-})
-
-router.post("/", async (req, res) => {
-	try {
-		const password = await bcrypt.hash(req.body.password, 8)
-		await User.create({
-			roll: req.body.roll,
-			password: password,
-			name: req.body.name,
-			room: req.body.room,
-			gender: req.body.gender,
-			phone: req.body.phone
-		})
-		res.status(201).end()
-	} catch (err) {
-		if (err.code === 11000) {
-			return res.status(400).json({ error: "duplicate user" })
-		}
-		res.status(500).send(err)
-	}
-})
 
 router.post("/login", async (req, res) => {
 	try {
@@ -89,11 +61,103 @@ router.get("/authCheck", async (req, res) => {
 	}
 })
 
+router.get("/staff", async (req, res) => {
+	try {
+		const users = await Group.aggregate([
+			{ $match: { name: { $in: ["staff", "admin"] } } },
+			{
+				$group: {
+					_id: 0,
+					users: { $push: "$users" }
+				}
+			},
+			{
+				$project: {
+					users: {
+						$reduce: {
+							input: "$users",
+							initialValue: [],
+							in: { $setUnion: ["$$value", "$$this"] }
+						}
+					}
+				}
+			}
+		]).exec()
+		console.log(users[0])
+		const popUsersQuery = await User.populate(users[0], { path: "users", select: "name roll room -_id" })
+		const popUsers = popUsersQuery.users
+		return res.status(200).json(popUsers)
+	} catch (err) {
+		console.log(err)
+		res.status(500).send(err)
+	}
+})
+
+router.get("/admin", async (req, res) => {
+	try {
+		const group = await Group.findOne({ name: "admin" }).exec()
+		return res.status(200).json(await group.popUsers)
+	} catch (err) {
+		res.status(500).send(err)
+	}
+})
+
 router.get("/logout", isAuthenticated, async (req, res) => {
 	try {
 		res.clearCookie("session")
 		res.status(200).send()
 	} catch (err) {
+		res.status(500).send(err)
+	}
+})
+
+router.get("/:roll", isAuthenticated, attachUser(), isAdmin, async (req, res) => {
+	try {
+		const user = await User.findOne({ roll: req.params.roll }, "name roll room gender active -_id").exec()
+		res.send(user)
+	} catch (err) {
+		res.status(500).send(err)
+	}
+})
+
+router.patch("/:roll", isAuthenticated, attachUser(), isAdmin, async (req, res) => {
+	try {
+		let change = {}
+		if (req.body.active !== null) {
+			change.active = req.body.active
+		}
+		await User.findOneAndUpdate({ roll: req.params.roll }, change).exec()
+		res.status(200).end()
+	} catch (err) {
+		res.status(500).send(err)
+	}
+})
+
+router.get("/", isAuthenticated, attachUser(), isAdmin, async (req, res) => {
+	try {
+		const users = await User.find({}, "name roll room active -_id").exec()
+		res.send(users)
+	} catch (err) {
+		res.status(500).send(err)
+	}
+})
+
+router.post("/", async (req, res) => {
+	try {
+		const password = await bcrypt.hash(req.body.password, 8)
+		await User.create({
+			roll: req.body.roll,
+			password: password,
+			name: req.body.name,
+			room: req.body.room,
+			gender: req.body.gender,
+			phone: req.body.phone
+		})
+		res.status(201).end()
+	} catch (err) {
+		if (err.code === 11000) {
+			return res.status(400).json({ error: "duplicate user" })
+		}
 		res.status(500).send(err)
 	}
 })
