@@ -113,7 +113,16 @@ router.get("/logout", isAuthenticated, async (req, res) => {
 
 router.get("/:roll", isAuthenticated, attachUser(), isAdmin, async (req, res) => {
 	try {
-		const user = await User.findOne({ roll: req.params.roll }, "name roll room gender active -_id").exec()
+		let user = await User.findOne({ roll: req.params.roll }).exec()
+		user = {
+			id: user.id,
+			name: user.name,
+			roll: user.roll,
+			room: user.room,
+			gender: user.gender,
+			active: user.active,
+			groups: await user.groups()
+		}
 		res.send(user)
 	} catch (err) {
 		res.status(500).send(err)
