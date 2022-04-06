@@ -47,7 +47,7 @@ router.post("/login", async (req, res) => {
 router.get("/authCheck", async (req, res) => {
 	const token = req.cookies.session || req.headers["x-access-token"]
 	if (!token) {
-		return res.status(401).send("No Authentication Token")
+		return res.status(401).send("no auth token")
 	}
 	try {
 		const decoded = await jwt.verify(token, process.env.TOKEN_SECRET)
@@ -55,9 +55,9 @@ router.get("/authCheck", async (req, res) => {
 		if (user) {
 			return res.status(200).send({ name: user.name, groups: await user.groups() })
 		}
-		return res.status(404).send("User does not Exist")
+		return res.status(400).send("user does not exist")
 	} catch (err) {
-		return res.status(401).send("Invalid Token")
+		return res.status(401).send("invalid token")
 	}
 })
 
